@@ -24,6 +24,13 @@ You should have something like this:
 Fill all the information.  
 ~~Note: account must be the bot account name without the @. for me it would look like this: `"account": "_RiseDev"`~~
 
+## Todo list:
+- [] Setup the bot to post once everyday at specified times.
+- [] Set the bot to post at each boot.
+- [] Multi account
+- [] Report Erros and crash on Discord and Emails.
+- [] ...
+
 ## More information: 
 This bot is running on NodeJS 16, we havent tested it on older version, because this is a side project, and our main project [Yukiko](https://Yukiko.app) is running on NodeJS 16.  
 This bot is owned by [Stellar Corporation](https://slettar-corp.net)
