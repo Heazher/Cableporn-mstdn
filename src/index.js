@@ -1,4 +1,4 @@
-\/**
+/**
  * 
  * I will be nice and write the comments in English. 
  * No need to thank be. but if you want to just send: 
