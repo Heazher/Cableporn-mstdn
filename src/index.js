@@ -24,6 +24,7 @@ const fs = require("fs");
 const mongoose = require("mongoose");
 const axios = require("axios");
 const AWS = require("aws-sdk");
+const schedule = require("node-schedule");
 const Media = require("./models/Media");
 const {
   client_key,
@@ -37,7 +38,7 @@ const request = require("request")
 const Path = require("path");
 
 
-// initialize AWS
+// initialize AWS (๑•̀ㅂ•́)و✧
 /**
  * Dev Will use my AWS Bucket.
  * Production Probabaly the same, but should use Nishikino Networks's CDN.
@@ -52,7 +53,7 @@ AWS. config.update({
 
 const s3 = new AWS.S3();
 
-// Initialize Database
+// Initialize Database (•̀ᴗ•́)و ̑̑
 mongoose.connect(DBUri);
 mongoose.connection.on("open", (host) =>
   console.log("[DATABASE]: 接続されました！")
@@ -61,7 +62,7 @@ mongoose.connection.on("error", (err) =>
   console.log(`[DATABASE]: エラーが発生しました。${err}`)
 );
 
-// Initialize Mstdn client.
+// Initialize Mstdn client. (•̀ᴗ•́)و ̑̑ 
 const M = new Mstdn({
   client_key,
   access_token,
@@ -70,14 +71,15 @@ const M = new Mstdn({
   api_url: "https://mstdn.jp/api/",
 });
 
-// Sleep technology 9000 (Super advenced stuff u know.)
+// Sleep technology 9000 (Super advenced stuff u know.) (⇀‸↼‶)
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-// fetchReddit()
-getMedia()
+// Get new post on boot. ( ･ิ,_ゝ･ิ)ヾ
+fetchReddit()
 
+// Get new posts (•̀ᴗ•́)و ̑̑ 
 async function fetchReddit() {
-  axios.get(`https://reddit.com/r/cableporn.json?sort=top&limit=100`)
+  axios.get(`https://reddit.com/r/cableporn.json?sort=top&limit=800`)
   .then(async (res) => {
     const posts = res.data.data.children;
     posts.forEach(async (reddit) => {
@@ -132,7 +134,7 @@ async function fetchReddit() {
   })
 }
 
-// Get a post from the database that wasent posted before.
+// Get a post from the database that wasent posted before. (๑•̀ㅂ•́)و✧ 
 async function getMedia() {
   const media = await Media.findOne({ isPosted: false });
   if(!media) return postError();
@@ -157,7 +159,7 @@ async function getMedia() {
   })
 }
 
-// Send media to MSTDN
+// Send media to MSTDN (*'▽')ノ♪
 async function sendMedia(path, media) {
   M.post("v2/media", {
     file: fs.createReadStream(path),
@@ -182,6 +184,7 @@ async function sendMedia(path, media) {
   });
 }
 
+// Send errors to developers (╯°□°）╯︵ ┻━┻
 async function postError(error) {
   let err = error;
   if(!err) err = "⚠ No Media found.\n Please fix @heazher@mstdn.jp @Asthriona@mstdn.jp"
@@ -193,3 +196,20 @@ async function postError(error) {
     console.log(data);
   })
 }
+
+// Scheduling! (｡•̀ᴗ-)✧
+
+// Get posts at midnight.
+schedule.scheduleJob("0 0 * * *", async () => {
+  fetchReddit();
+});
+
+// Post new post at 02:00PM GTM (11:00 PM JST.)
+schedule.scheduleJob("0 23 * * *", () => {
+  getMedia();
+});
+
+// Post OLD post Every 6hrs (Later. I gotta get back to work!!!)
+// schedule.scheduleJob("0 */6 * * *", () => {
+//   getOldMedia();
+// });
