@@ -33,4 +33,4 @@ Fill all the information.
 
 ## More information: 
 This bot is running on NodeJS 16, we havent tested it on older version, because this is a side project, and our main project [Yukiko](https://Yukiko.app) is running on NodeJS 16.  
-This bot is owned by [Stellar Corporation](https://slettar-corp.net)
+This bot is owned by [Stellar Corporation](https://stellar-corp.net)
