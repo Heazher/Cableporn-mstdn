@@ -76,6 +76,9 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Get new post on boot. ( ･ิ,_ゝ･ิ)ヾ
 fetchReddit()
+.then(() => {
+  getMedia();
+})
 
 // Get new posts (•̀ᴗ•́)و ̑̑ 
 async function fetchReddit() {
