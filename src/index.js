@@ -33,7 +33,7 @@ const {
   aws_key,
   aws_secret,
   DBUri,
-  MstdnAPI,
+  mstdnAPI,
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
@@ -69,7 +69,7 @@ const M = new Mstdn({
   access_token,
   client_secret,
   timeout_ms: 60 * 1000,
-  api_url: "https://mstdn.jp/api/",
+  api_url: mstdnAPI,
 });
 
 // Sleep technology 9000 (Super advenced stuff u know.) (⇀‸↼‶)
