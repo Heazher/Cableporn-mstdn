@@ -33,6 +33,7 @@ const {
   aws_key,
   aws_secret,
   DBUri,
+  MstdnAPI,
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
