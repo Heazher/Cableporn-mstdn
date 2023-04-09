@@ -27,13 +27,11 @@ const AWS = require("aws-sdk");
 const schedule = require("node-schedule");
 const Media = require("./models/Media");
 const {
-  client_key,
-  access_token,
-  client_secret,
-  aws_key,
-  aws_secret,
   DBUri,
   mstdnAPI,
+  reddit,
+  aws,
+  mastodon,
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
@@ -45,11 +43,11 @@ const Path = require("path");
  * Production Probabaly the same, but should use Nishikino Networks's CDN.
  */
 
-AWS. config.update({
-  accessKeyId: aws_key,
-  secretAccessKey: aws_secret,
-    region: "ap-northeast-1",
-    s3ForcePathStyle: true
+AWS.config.update({
+  accessKeyId: aws.key,
+  secretAccessKey: aws.secret,
+  region: aws.region,
+  s3ForcePathStyle: true
 })
 
 const s3 = new AWS.S3();
@@ -65,9 +63,9 @@ mongoose.connection.on("error", (err) =>
 
 // Initialize Mstdn client. (•̀ᴗ•́)و ̑̑ 
 const M = new Mstdn({
-  client_key,
-  access_token,
-  client_secret,
+  client_key: mastodon.client_key,
+  access_token: mastodon.access_token,
+  client_secret: mastodon.client_secret,
   timeout_ms: 60 * 1000,
   api_url: mstdnAPI,
 });
@@ -77,89 +75,91 @@ const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 // Get new post on boot. ( ･ิ,_ゝ･ิ)ヾ
 fetchReddit()
-.then(() => {
-  getMedia();
-})
+  .then(() => {
+    getMedia();
+  })
 
 // Get new posts (•̀ᴗ•́)و ̑̑ 
 async function fetchReddit() {
-  axios.get(`https://reddit.com/r/cableporn.json?sort=top&limit=800`)
-  .then(async (res) => {
-    const posts = res.data.data.children;
-    posts.forEach(async (reddit) => {
-      let data = reddit.data;
-      if(reddit.data.url_overridden_by_dest == null) return console.log(`🙅‍♀️ ${data.id} has No media.`);
-      if(!reddit.data.url_overridden_by_dest.endsWith(".jpg") && !reddit.data.url_overridden_by_dest.endsWith(".png")) return;
-      const media = await Media.findOne({ PostId: data.id });
-      if(media) return console.log(`🙅‍♀️ ${data.id} is already saved in the database.`)
-      const uploadMedia = async (file) => {
-        const params = {
-          Bucket: "kyoko-cdn",
-          Key: `CablePorn/media/${data.id}.jpg`,
-          Body: fs.readFileSync(file),
-          ACL: "public-read",
-          ContentType: "image/jpeg"
-        };
-        return await s3.upload(params).promise();
-      }
-      const download = async (url, path, callback) => {
-        await request.head(url, async (err, res,body) => {
-          await request(url)
-          .pipe(fs.createWriteStream(path))
-          .on("close", callback);
-        })
-      }
-      const url = data.url_overridden_by_dest;
-      const path = Path.join(__dirname, `./media/${data.id}.jpg`)
-      await download(url, path, () => {
-        console.log(`${data.id} has been downloaded... Uploading to S3`)
-        uploadMedia(path)
-        .then((dataS3) => {
-          console.log(`${data.id} has been uploaded to S3. ${dataS3.Key}`)
-          const newMedia = new Media({
-            PostId: data.id,
-            pictname: dataS3.Key,
-            title: data.title,
-            Author: data.author,
-            url: `https://reddit.com${data.permalink}`,
-            isPosted: false
-          });
-          newMedia.save()
-          .then(() => {
-            console.log(`${data.id} has been saved in the database.`)
-            fs.unlink(path, (err) => {
-              if(err) return console.error(err);
-              console.log(`${data.id} has been deleted from local disk.`)
-            });
+  axios.get(`https://reddit.com/r/${reddit.sub}.json?sort=top&limit=${reddit.limit}`)
+    .then(async (res) => {
+      const posts = res.data.data.children;
+      posts.forEach(async (reddit) => {
+        let data = reddit.data;
+        if (reddit.data.url_overridden_by_dest == null) return console.log(`🙅‍♀️ ${data.id} has No media.`);
+        if (!reddit.data.url_overridden_by_dest.endsWith(".jpg") && !reddit.data.url_overridden_by_dest.endsWith(".png")) return;
+        const media = await Media.findOne({ PostId: data.id });
+        if (media) return console.log(`🙅‍♀️ ${data.id} is already saved in the database.`)
+        const uploadMedia = async (file) => {
+          const params = {
+            Bucket: aws.bucket,
+            Key: `CablePorn/media/${data.id}.jpg`,
+            Body: fs.readFileSync(file),
+            ACL: "public-read",
+            ContentType: "image/jpeg"
+          };
+          return await s3.upload(params).promise();
+        }
+        const download = async (url, path, callback) => {
+          await request.head(url, async (err, res, body) => {
+            await request(url)
+              .pipe(fs.createWriteStream(path))
+              .on("close", callback);
           })
+        }
+        const url = data.url_overridden_by_dest;
+        const path = Path.join(__dirname, `./media/${data.id}.jpg`)
+        await download(url, path, () => {
+          console.log(`${data.id} has been downloaded... Uploading to S3`)
+          uploadMedia(path)
+            .then((dataS3) => {
+              console.log(`${data.id} has been uploaded to S3. ${dataS3.Key}`)
+              const newMedia = new Media({
+                PostId: data.id,
+                pictname: dataS3.Key,
+                title: data.title,
+                Author: data.author,
+                url: `https://reddit.com${data.permalink}`,
+                isPosted: false
+              });
+              newMedia.save()
+                .then(() => {
+                  console.log(`${data.id} has been saved in the database.`)
+                  fs.unlink(path, (err) => {
+                    if (err) return console.error(err);
+                    console.log(`${data.id} has been deleted from local disk.`)
+                  });
+                })
+            })
         })
       })
     })
-  })
 }
 
 // Get a post from the database that wasent posted before. (๑•̀ㅂ•́)و✧ 
 async function getMedia() {
   const media = await Media.findOne({ isPosted: false });
-  if(!media) return postError();
+  if (!media) return postError();
   const download = async (url, path, callback) => {
-    await request.head(url, async (err, res,body) => {
+    await request.head(url, async (err, res, body) => {
       await request(url)
-      .pipe(fs.createWriteStream(path))
-      .on("close", callback);
+        .pipe(fs.createWriteStream(path))
+        .on("close", callback);
     })
   }
   const url = media.pictname;
   const path = Path.join(__dirname, `./media/${media.PostId}.jpg`);
   await download(url, path, () => {
     sendMedia(path, media)
-    .then(() => {
-      media.isPosted = true;
-      media.save()
       .then(() => {
-        console.log("OK")
-      })
-    });
+        if (save_after == true) {
+          media.isPosted = true;
+          media.save()
+            .then(() => {
+              console.log("Post saved as posted.")
+            })
+        }
+      });
   })
 }
 
@@ -181,8 +181,11 @@ async function sendMedia(path, media) {
         media_ids: [id],
       },
       (err, data) => {
-        if (err) return console.error(err);
-        console.log(data);
+        if (err) {
+          postError("Media failed to post.");
+          return console.error(err);
+        }
+        console.log("Media posted!");
       }
     );
   });
@@ -191,12 +194,12 @@ async function sendMedia(path, media) {
 // Send errors to developers (╯°□°）╯︵ ┻━┻
 async function postError(error) {
   let err = error;
-  if(!err) err = "⚠ No Media found.\n Please fix @heazher@mstdn.jp @Asthriona@mstdn.jp"
+  if (!err) err = "⚠ No Media found.\n Please fix @heazher@mstdn.jp @Asthriona@mstdn.jp"
   M.post("v1/statues", {
     status: err,
     visibility: "direct",
   }, (err, data) => {
-    if(err) return console.log(err);
+    if (err) return console.log(err);
     console.log(data);
   })
 }

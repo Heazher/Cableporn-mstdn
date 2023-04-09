@@ -1,5 +1,19 @@
-{
-    "client_key": "",
-    "access_token": "",
-    "client_secret": ""
+{   
+    "DBUri": "",
+    "mastodon": {
+        "client_key": "",
+        "access_token": "",
+        "client_secret": ""
+    },
+    "aws": {
+        "key": "",
+        "secret": "",
+        "region": "",
+        "bucket": ""
+    },
+    "reddit": {
+        "sub": "",
+        "limit": ""
+    },
+    "save_after": false
 }
