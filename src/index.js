@@ -32,6 +32,7 @@ const {
   reddit,
   aws,
   mastodon,
+  save_after,
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
@@ -67,7 +68,7 @@ const M = new Mstdn({
   access_token: mastodon.access_token,
   client_secret: mastodon.client_secret,
   timeout_ms: 60 * 1000,
-  api_url: mstdnAPI,
+  api_url: mastodon.mstdnAPI,
 });
 
 // Sleep technology 9000 (Super advenced stuff u know.) (⇀‸↼‶)
@@ -180,6 +181,7 @@ async function sendMedia(path, media) {
     file: fs.createReadStream(path),
   }).then(async (res) => {
     var id = res.data.id;
+    console.log(res.data);
     console.log(`Media ID: ${id} Waiting 5 seconds...`);
 
     await delay(5000);
@@ -198,7 +200,11 @@ async function sendMedia(path, media) {
         }
         console.log("Media posted!");
       }
-    );
+    )
+    .catch((err) => {
+      console.log(err);
+      postError("Media failed to post.");
+    });
   });
 }
 
