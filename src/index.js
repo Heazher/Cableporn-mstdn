@@ -159,7 +159,6 @@ async function getMedia() {
   else {
     url = `https://${aws.bucket}.s3.${aws.region}.amazonaws.com/${media.pictname}`;
   }
-  return console.log(url);
   const path = Path.join(__dirname, `./media/${media.PostId}.jpg`);
   await download(url, path, () => {
     sendMedia(path, media)
