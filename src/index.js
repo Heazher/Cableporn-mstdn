@@ -137,8 +137,13 @@ async function fetchReddit() {
 
 // Get a post from the database that wasent posted before. (๑•̀ㅂ•́)و✧ 
 async function getMedia() {
-  const media = await Media.findOne({ isPosted: false });
-  if (!media) return postError();
+  let media;
+  media = await Media.findOne({ isPosted: false });
+  if(!media) {
+    // Get posted media in the database
+    const oldMedia = await Media.find({ isPosted: true });
+    media = oldMedia[Math.floor(Math.random() * oldMedia.length)];
+  };
   const download = async (url, path, callback) => {
     await request.head(url, async (err, res, body) => {
       await request(url)
@@ -169,6 +174,7 @@ async function sendMedia(path, media) {
     file: fs.createReadStream(path),
   }).then(async (res) => {
     var id = res.data.id;
+    console.log(res.data);
     console.log(`Media ID: ${id} Waiting 5 seconds...`);
 
     await delay(5000);
@@ -187,7 +193,11 @@ async function sendMedia(path, media) {
         }
         console.log("Media posted!");
       }
-    );
+    )
+    .catch((err) => {
+      console.log(err);
+      postError("Media failed to post.");
+    });
   });
 }
 
