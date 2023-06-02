@@ -32,6 +32,7 @@ const {
   reddit,
   aws,
   mastodon,
+  save_after
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
@@ -63,11 +64,11 @@ mongoose.connection.on("error", (err) =>
 
 // Initialize Mstdn client. (•̀ᴗ•́)و ̑̑ 
 const M = new Mstdn({
-  client_key: mastodon.client_key,
-  access_token: mastodon.access_token,
-  client_secret: mastodon.client_secret,
+  // client_key: mastodon.client_key,
+  access_token: "248VOoGCWMIATvwHYFYJ0uGlzYEXFA0fEjCiqrSpHZ8",
+  // client_secret: mastodon.client_secret,
   timeout_ms: 60 * 1000,
-  api_url: mstdnAPI,
+  api_url: mastodon.mstdnAPI,
 });
 
 // Sleep technology 9000 (Super advenced stuff u know.) (⇀‸↼‶)
@@ -81,6 +82,7 @@ fetchReddit()
 
 // Get new posts (•̀ᴗ•́)و ̑̑ 
 async function fetchReddit() {
+  console.log("Fetch Reddit function")
   axios.get(`https://reddit.com/r/${reddit.sub}.json?sort=top&limit=${reddit.limit}`)
     .then(async (res) => {
       const posts = res.data.data.children;
@@ -138,6 +140,7 @@ async function fetchReddit() {
 
 // Get a post from the database that wasent posted before. (๑•̀ㅂ•́)و✧ 
 async function getMedia() {
+  console.log("Get Media function")
   const media = await Media.findOne({ isPosted: false });
   if (!media) return postError();
   const download = async (url, path, callback) => {
@@ -147,7 +150,8 @@ async function getMedia() {
         .on("close", callback);
     })
   }
-  const url = media.pictname;
+  let url = media.pictname;
+  if(!url.startsWith("https://")) url = `https://kyoko-cdn.s3.ap-northeast-1.amazonaws.com/${media.pictname}`;
   const path = Path.join(__dirname, `./media/${media.PostId}.jpg`);
   await download(url, path, () => {
     sendMedia(path, media)
@@ -165,16 +169,19 @@ async function getMedia() {
 
 // Send media to MSTDN (*'▽')ノ♪
 async function sendMedia(path, media) {
-  M.post("v2/media", {
+  console.log("Send Media function")
+  console.log(M)
+  M.post("media", {
     file: fs.createReadStream(path),
   }).then(async (res) => {
+    console.log(res.data);
     var id = res.data.id;
     console.log(`Media ID: ${id} Waiting 5 seconds...`);
 
     await delay(5000);
 
     M.post(
-      "v1/statuses",
+      "statuses",
       {
         status: `${media.title}\nby u/${media.Author}\n${media.url}\nvia r/CablePorn`,
         visibility: "public",
@@ -193,6 +200,7 @@ async function sendMedia(path, media) {
 
 // Send errors to developers (╯°□°）╯︵ ┻━┻
 async function postError(error) {
+  console.log("Post Error function")
   let err = error;
   if (!err) err = "⚠ No Media found.\n Please fix @heazher@mstdn.jp @Asthriona@mstdn.jp"
   M.post("v1/statues", {
