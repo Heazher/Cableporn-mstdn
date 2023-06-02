@@ -64,9 +64,7 @@ mongoose.connection.on("error", (err) =>
 
 // Initialize Mstdn client. (•̀ᴗ•́)و ̑̑ 
 const M = new Mstdn({
-  // client_key: mastodon.client_key,
-  access_token: "248VOoGCWMIATvwHYFYJ0uGlzYEXFA0fEjCiqrSpHZ8",
-  // client_secret: mastodon.client_secret,
+  access_token: mastodon.access_token,
   timeout_ms: 60 * 1000,
   api_url: mastodon.mstdnAPI,
 });
@@ -82,7 +80,6 @@ fetchReddit()
 
 // Get new posts (•̀ᴗ•́)و ̑̑ 
 async function fetchReddit() {
-  console.log("Fetch Reddit function")
   axios.get(`https://reddit.com/r/${reddit.sub}.json?sort=top&limit=${reddit.limit}`)
     .then(async (res) => {
       const posts = res.data.data.children;
@@ -140,7 +137,6 @@ async function fetchReddit() {
 
 // Get a post from the database that wasent posted before. (๑•̀ㅂ•́)و✧ 
 async function getMedia() {
-  console.log("Get Media function")
   const media = await Media.findOne({ isPosted: false });
   if (!media) return postError();
   const download = async (url, path, callback) => {
@@ -169,12 +165,9 @@ async function getMedia() {
 
 // Send media to MSTDN (*'▽')ノ♪
 async function sendMedia(path, media) {
-  console.log("Send Media function")
-  console.log(M)
   M.post("media", {
     file: fs.createReadStream(path),
   }).then(async (res) => {
-    console.log(res.data);
     var id = res.data.id;
     console.log(`Media ID: ${id} Waiting 5 seconds...`);
 
@@ -200,7 +193,6 @@ async function sendMedia(path, media) {
 
 // Send errors to developers (╯°□°）╯︵ ┻━┻
 async function postError(error) {
-  console.log("Post Error function")
   let err = error;
   if (!err) err = "⚠ No Media found.\n Please fix @heazher@mstdn.jp @Asthriona@mstdn.jp"
   M.post("v1/statues", {
