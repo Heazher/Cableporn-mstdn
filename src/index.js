@@ -32,7 +32,7 @@ const {
   reddit,
   aws,
   mastodon,
-  save_after,
+  save_after
 } = require("../config.json");
 const request = require("request")
 const Path = require("path");
@@ -64,9 +64,7 @@ mongoose.connection.on("error", (err) =>
 
 // Initialize Mstdn client. (•̀ᴗ•́)و ̑̑ 
 const M = new Mstdn({
-  client_key: mastodon.client_key,
   access_token: mastodon.access_token,
-  client_secret: mastodon.client_secret,
   timeout_ms: 60 * 1000,
   api_url: mastodon.mstdnAPI,
 });
@@ -153,13 +151,8 @@ async function getMedia() {
         .on("close", callback);
     })
   }
-  let url;
-  if (media.pictname.startsWith("https://")) {
-    url = media.pictname;
-  }
-  else {
-    url = `https://${aws.bucket}.s3.${aws.region}.amazonaws.com/${media.pictname}`;
-  }
+  let url = media.pictname;
+  if(!url.startsWith("https://")) url = `https://kyoko-cdn.s3.ap-northeast-1.amazonaws.com/${media.pictname}`;
   const path = Path.join(__dirname, `./media/${media.PostId}.jpg`);
   await download(url, path, () => {
     sendMedia(path, media)
@@ -177,7 +170,7 @@ async function getMedia() {
 
 // Send media to MSTDN (*'▽')ノ♪
 async function sendMedia(path, media) {
-  M.post("v2/media", {
+  M.post("media", {
     file: fs.createReadStream(path),
   }).then(async (res) => {
     var id = res.data.id;
@@ -187,7 +180,7 @@ async function sendMedia(path, media) {
     await delay(5000);
 
     M.post(
-      "v1/statuses",
+      "statuses",
       {
         status: `${media.title}\nby u/${media.Author}\n${media.url}\nvia r/CablePorn`,
         visibility: "public",
